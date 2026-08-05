@@ -1,9 +1,1 @@
-<script>import '../app.css';</script>
-<div class="min-h-screen text-slate-100 font-sans relative">
-<div class="fixed inset-0 bg-slate-900 -z-10 overflow-hidden">
-<div class="absolute top-10 left-10 w-96 h-96 bg-blue-600/30 blur-[120px] mix-blend-multiply opacity-70 rounded-full"></div>
-<div class="absolute bottom-10 right-10 w-96 h-96 bg-purple-600/20 blur-[120px] mix-blend-multiply opacity-70 rounded-full"></div>
-</div>
-<nav class="sticky top-0 backdrop-blur-md bg-slate-900/40 border-b border-white/10 p-4"><div class="container mx-auto font-bold text-xl">Nexus IDP</div></nav>
-<main class="container mx-auto p-4"><slot/></main>
-</div>
+<script>import '../app.css';</script><div class="min-h-screen text-slate-100 font-sans relative overflow-x-hidden"><div class="fixed inset-0 -z-10 bg-slate-900"><div class="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-blue-600/30 rounded-full blur-[120px] mix-blend-multiply opacity-70"></div><div class="absolute top-1/3 right-1/4 w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[120px] mix-blend-multiply opacity-70"></div></div><nav class="sticky top-0 z-50 backdrop-blur-md bg-slate-900/40 border-b border-white/10 px-6 py-4 flex items-center justify-between"><div class="text-xl font-bold tracking-tighter">NEXUS IDP</div></nav><main class="relative z-10"><slot/></main></div>

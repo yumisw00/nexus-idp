@@ -1,5 +1,4 @@
 package database
-
 import (
 	"context"
 	"os"
@@ -7,20 +6,28 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
-
 func NewPostgresPool() (*pgxpool.Pool, error) {
 	u := os.Getenv("DATABASE_URL")
 	if u == "" {
-		u = "postgres://root:root@localhost:5432/nexus?sslmode=disable"
+		u = "postgres://root:root@127.0.0.1:5432/nexus?sslmode=disable"
 	}
-	p, err := pgxpool.New(context.Background(), u)
-	if err != nil {
-		return nil, err
+
+	var p *pgxpool.Pool
+	var err error
+
+	for i := 0; i < 5; i++ {
+		ctx, c := context.WithTimeout(context.Background(), 5*time.Second)
+		p, err = pgxpool.New(ctx, u)
+		if err == nil {
+			err = p.Ping(ctx)
+			if err == nil {
+				c()
+				return p, nil
+			}
+		}
+		c()
+		time.Sleep(2 * time.Second)
 	}
-	c, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-	if err := p.Ping(c); err != nil {
-		return nil, err
-	}
-	return p, nil
+
+	return nil, err
 }

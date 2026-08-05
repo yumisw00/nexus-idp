@@ -1,5 +1,5 @@
 
-import root from '../root.svelte';
+import root from '../root.js';
 import { set_building, set_prerendering } from '$app/env/internal';
 import { set_assets } from '$app/paths/internal/server';
 import { set_manifest, set_read_implementation } from '__sveltekit/server';
@@ -23,10 +23,10 @@ export const options = {
 	service_worker_options: undefined,
 	server_error_boundaries: false,
 	templates: {
-		app: ({ head, body, assets, nonce, env }) => "<!doctype html>\n<html lang=\"en\">\n\n<head>\n    <meta charset=\"utf-8\" />\n    <link rel=\"icon\" href=\"" + assets + "/favicon.png\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n    " + head + "\n</head>\n\n<body class=\"bg-slate-950 text-slate-100 selection:bg-blue-500/50\">\n    <div style=\"display: contents\">" + body + "</div>\n</body>\n\n</html>",
+		app: ({ head, body, assets, nonce, env }) => "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"/><link rel=\"icon\" href=\"" + assets + "/favicon.png\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/>" + head + "</head><body class=\"bg-slate-950 text-slate-100 selection:bg-blue-500/50\"><div style=\"display: contents\">" + body + "</div></body></html>",
 		error
 	},
-	version_hash: "1u8exqu"
+	version_hash: "1a54cn0"
 };
 
 export async function get_hooks() {

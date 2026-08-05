@@ -143,6 +143,7 @@ declare module '$env/static/private' {
 	export const npm_node_execpath: string;
 	export const DATA_CLOUD_CURR_IDE_NAME: string;
 	export const LC_NUMERIC: string;
+	export const OLDPWD: string;
 	export const TERM_PROGRAM: string;
 	export const NODE_ENV: string;
 }
@@ -336,6 +337,7 @@ declare module '$env/dynamic/private' {
 		npm_node_execpath: string;
 		DATA_CLOUD_CURR_IDE_NAME: string;
 		LC_NUMERIC: string;
+		OLDPWD: string;
 		TERM_PROGRAM: string;
 		NODE_ENV: string;
 		[key: `PUBLIC_${string}`]: undefined;

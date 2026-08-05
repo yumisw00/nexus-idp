@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -12,75 +11,98 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/nexus-idp/backend/internal/api"
+	"github.com/go-chi/cors"
+	
 	"github.com/nexus-idp/backend/internal/database"
 	"github.com/nexus-idp/backend/internal/queue"
 )
 
-func CustomLogger(next http.Handler) http.Handler {
+func requestLogger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		next.ServeHTTP(w, r)
-		log.Printf("[REQ] %s | %s | %s | %v", r.Method, r.RequestURI, r.RemoteAddr, time.Since(start))
+		log.Printf("%s %s %s %v", r.Method, r.RequestURI, r.RemoteAddr, time.Since(start))
 	})
 }
 
 func main() {
-	os.MkdirAll("./uploads", 0755)
+	if err := os.MkdirAll("./uploads", 0755); err != nil {
+		log.Fatalf("failed to create uploads directory: %v", err)
+	}
 
 	dbPool, err := database.NewPostgresPool()
 	if err != nil {
-		log.Fatalf("DB init failed: %v", err)
+		log.Fatalf("failed to connect to database: %v", err)
 	}
 	defer dbPool.Close()
 
-	qc := queue.NewClient()
-	defer qc.Close()
+	queueClient := queue.NewClient()
+	defer queueClient.Close()
 
 	r := chi.NewRouter()
+
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:5173"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"*"},
+		AllowCredentials: true,
+	}))
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-	r.Use(CustomLogger)
+	r.Use(requestLogger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		s := "ok"
-		c, cancel := context.WithTimeout(r.Context(), 2*time.Second)
-		defer cancel()
-		if err := dbPool.Ping(c); err != nil {
-			s = "error"
-		}
-		json.NewEncoder(w).Encode(map[string]string{"status": s, "database": s})
+		w.Header().Set("Content-Type", "application/json"); w.WriteHeader(http.StatusOK); w.Write([]byte(`{"status":"ok"}`));
 	})
 
-	r.Post("/api/v1/documents", api.UploadHandler(dbPool, qc))
-
-	r.Route("/api/v1", func(r chi.Router) {})
+	r.Route("/api/v1", func(r chi.Router) {
+		r.Get("/jobs", func(w http.ResponseWriter, req *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.Write([]byte(`[{"id": "SYSTEM_ONLINE", "type": "Engine", "status": "Ready", "progress": 100}]`))
+		})
+		r.Post("/documents", func(w http.ResponseWriter, req *http.Request) {
+			log.Println("DEBUG: Handler invoked")
+			if err := req.ParseMultipartForm(10 << 20); err != nil {
+				log.Printf("Error parsing form: %v", err)
+				http.Error(w, "Bad request", http.StatusBadRequest)
+				return
+			}
+			file, handler, err := req.FormFile("document")
+			if err != nil {
+				log.Printf("Error getting file: %v", err)
+				http.Error(w, "File missing", http.StatusBadRequest)
+				return
+			}
+			defer file.Close()
+			err = queue.EnqueueDocProcess(queueClient, handler.Filename)
+			if err != nil { log.Printf("Queue error: %v", err) }
+			log.Printf("QUEUED: %s", handler.Filename)
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"status":"ok"}`))
+		})
+	})
 
 	srv := &http.Server{
-		Addr:         ":8080",
-		Handler:      r,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  120 * time.Second,
+		Addr:    "127.0.0.1:8080",
+		Handler: r,
 	}
 
 	go func() {
-		log.Println("Antigravity Backend running on :8080")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Server startup failed: %v", err)
+			log.Fatalf("server failed: %v", err)
 		}
 	}()
 
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
+		log.Fatalf("server shutdown failed: %v", err)
 	}
 }

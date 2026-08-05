@@ -2,31 +2,50 @@ package ai
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"strings"
 
-	"github.com/google/genai-go"
+	"google.golang.org/genai"
 )
 
 func AnalyzeDocument(ctx context.Context, filePath string) (string, error) {
-	c, err := genai.NewClient(ctx, nil)
+	client, err := genai.NewClient(ctx, nil)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create client: %w", err)
 	}
-	b, err := os.ReadFile(filePath)
+
+	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to read file: %w", err)
 	}
-	res, err := c.Models.GenerateContent(ctx, "gemini-3.1-pro",
-		genai.Text("Extract all key entities, dates, total amounts, and parties involved from this document. Return ONLY a valid, minified JSON object."),
-		genai.Blob{Data: b, MimeType: "text/plain"},
-	)
+
+	mimeType := "text/plain"
+	if strings.HasSuffix(filePath, ".pdf") {
+		mimeType = "application/pdf"
+	}
+
+	docPart := &genai.Part{
+		InlineData: &genai.Blob{
+			Data:     data,
+			MIMEType: mimeType,
+		},
+	}
+
+	contents := []*genai.Content{
+		{
+			Role: "user",
+			Parts: []*genai.Part{
+				{Text: "Extract all key entities, dates, total amounts, and parties involved from this document. Return ONLY a valid JSON object."},
+				docPart,
+			},
+		},
+	}
+
+	resp, err := client.Models.GenerateContent(ctx, "gemini-3.1-pro", contents, nil)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to generate content: %w", err)
 	}
-	if len(res.Candidates) > 0 && res.Candidates[0].Content != nil && len(res.Candidates[0].Content.Parts) > 0 {
-		if t, ok := res.Candidates[0].Content.Parts[0].(genai.Text); ok {
-			return string(t), nil
-		}
-	}
-	return "", nil
+
+	return resp.Text(), nil
 }
