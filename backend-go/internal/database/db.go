@@ -1,4 +1,5 @@
 package database
+
 import (
 	"context"
 	"os"
@@ -6,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
 func NewPostgresPool() (*pgxpool.Pool, error) {
 	u := os.Getenv("DATABASE_URL")
 	if u == "" {

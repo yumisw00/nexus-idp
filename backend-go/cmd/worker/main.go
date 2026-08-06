@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/hibiken/asynq"
-	
+
 	"github.com/nexus-idp/backend/internal/database"
 	"github.com/nexus-idp/backend/internal/worker"
 )
@@ -25,12 +25,15 @@ func main() {
 	srv := asynq.NewServer(
 		asynq.RedisClientOpt{Addr: redisURL},
 		asynq.Config{
-			Concurrency: 10,
+			Concurrency: 5,
+			Queues:      map[string]int{"default": 1},
 		},
 	)
 
+	log.Println("📡 Worker aktif: Mendengarkan antrian 'default'...")
+
 	mux := asynq.NewServeMux()
-	mux.HandleFunc("job:process_document", worker.HandleDocumentProcess(dbPool))
+	mux.HandleFunc("job:process_document", worker.HandleDocumentProcess)
 
 	if err := srv.Run(mux); err != nil {
 		log.Fatalf("worker failed: %v", err)

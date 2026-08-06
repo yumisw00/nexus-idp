@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -12,7 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-	
+
 	"github.com/nexus-idp/backend/internal/database"
 	"github.com/nexus-idp/backend/internal/queue"
 )
@@ -54,7 +55,9 @@ func main() {
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json"); w.WriteHeader(http.StatusOK); w.Write([]byte(`{"status":"ok"}`));
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"ok"}`))
 	})
 
 	r.Route("/api/v1", func(r chi.Router) {
@@ -76,8 +79,15 @@ func main() {
 				return
 			}
 			defer file.Close()
+			dst, err := os.Create("./uploads/" + handler.Filename)
+			if err == nil {
+				defer dst.Close()
+				io.Copy(dst, file)
+			}
 			err = queue.EnqueueDocProcess(queueClient, handler.Filename)
-			if err != nil { log.Printf("Queue error: %v", err) }
+			if err != nil {
+				log.Printf("Queue error: %v", err)
+			}
 			log.Printf("QUEUED: %s", handler.Filename)
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(`{"status":"ok"}`))

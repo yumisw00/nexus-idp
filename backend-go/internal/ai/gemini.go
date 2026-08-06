@@ -42,7 +42,7 @@ func AnalyzeDocument(ctx context.Context, filePath string) (string, error) {
 		},
 	}
 
-	resp, err := client.Models.GenerateContent(ctx, "gemini-3.1-pro", contents, nil)
+	resp, err := client.Models.GenerateContent(ctx, "gemini-3.5-flash-lite", contents, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate content: %w", err)
 	}
