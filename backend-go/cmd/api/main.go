@@ -69,6 +69,8 @@ func main() {
 	}
 
 	r.Route("/api/v1", func(r chi.Router) {
+		r.Post("/auth/register", RegisterHandler(dbPool))
+		r.Post("/auth/login", LoginHandler(dbPool))
 		r.Get("/jobs", func(w http.ResponseWriter, req *http.Request) {
 			rows, err := dbPool.Query(req.Context(), "SELECT id, type, status, res FROM analysis_jobs ORDER BY started_at DESC LIMIT 5")
 			if err != nil {
