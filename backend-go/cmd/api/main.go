@@ -61,28 +61,33 @@ func main() {
 		w.Write([]byte(`{"status":"ok"}`))
 	})
 
+	type JobResponse struct {
+		ID     string `json:"id"`
+		Type   string `json:"type"`
+		Status string `json:"status"`
+		Res    any    `json:"res,omitempty"`
+	}
+
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/jobs", func(w http.ResponseWriter, req *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
-			rows, err := dbPool.Query(req.Context(), "SELECT id, type, status FROM analysis_jobs ORDER BY started_at DESC LIMIT 5")
+			rows, err := dbPool.Query(req.Context(), "SELECT id, type, status, res FROM analysis_jobs ORDER BY started_at DESC LIMIT 5")
 			if err != nil {
 				http.Error(w, "DB Error", 500)
 				return
 			}
 			defer rows.Close()
-
-			type Job struct {
-				ID     string `json:"id"`
-				Type   string `json:"type"`
-				Status string `json:"status"`
-			}
-			jobs := []Job{}
+			var jobs []JobResponse
 			for rows.Next() {
-				var j Job
-				if err := rows.Scan(&j.ID, &j.Type, &j.Status); err == nil {
+				var j JobResponse
+				var resBytes []byte
+				if err := rows.Scan(&j.ID, &j.Type, &j.Status, &resBytes); err == nil {
+					if len(resBytes) > 0 {
+						json.Unmarshal(resBytes, &j.Res)
+					}
 					jobs = append(jobs, j)
 				}
 			}
+			w.Header().Set("Content-Type", "application/json")
 			if len(jobs) == 0 {
 				w.Write([]byte(`[]`))
 				return

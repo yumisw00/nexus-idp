@@ -104,6 +104,11 @@
 							<div class="h-2 w-full bg-slate-700 rounded-full overflow-hidden">
 								<div class="h-full bg-blue-500 transition-all duration-500" style="width:100%"></div>
 							</div>
+							{#if job.res}
+								<div class="mt-3 p-4 bg-slate-950/80 rounded-lg overflow-x-auto text-[11px] text-emerald-400 font-mono border border-emerald-500/20 shadow-inner">
+									<pre>{JSON.stringify(job.res, null, 2)}</pre>
+								</div>
+							{/if}
 						</div>
 					{/each}
 				</div>
