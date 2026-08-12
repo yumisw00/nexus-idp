@@ -13,7 +13,7 @@ import (
 func main() {
 	dbPool, err := database.NewPostgresPool()
 	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
+		log.Fatalf("Worker DB Error: %v", err)
 	}
 	defer dbPool.Close()
 
@@ -33,7 +33,7 @@ func main() {
 	log.Println("📡 Worker aktif: Mendengarkan antrian 'default'...")
 
 	mux := asynq.NewServeMux()
-	mux.HandleFunc("job:process_document", worker.HandleDocumentProcess)
+	mux.HandleFunc("job:process_document", worker.HandleDocumentProcess(dbPool))
 
 	if err := srv.Run(mux); err != nil {
 		log.Fatalf("worker failed: %v", err)

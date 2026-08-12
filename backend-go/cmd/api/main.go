@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -63,7 +64,30 @@ func main() {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/jobs", func(w http.ResponseWriter, req *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`[{"id": "SYSTEM_ONLINE", "type": "Engine", "status": "Ready", "progress": 100}]`))
+			rows, err := dbPool.Query(req.Context(), "SELECT id, type, status FROM analysis_jobs ORDER BY started_at DESC LIMIT 5")
+			if err != nil {
+				http.Error(w, "DB Error", 500)
+				return
+			}
+			defer rows.Close()
+
+			type Job struct {
+				ID     string `json:"id"`
+				Type   string `json:"type"`
+				Status string `json:"status"`
+			}
+			jobs := []Job{}
+			for rows.Next() {
+				var j Job
+				if err := rows.Scan(&j.ID, &j.Type, &j.Status); err == nil {
+					jobs = append(jobs, j)
+				}
+			}
+			if len(jobs) == 0 {
+				w.Write([]byte(`[]`))
+				return
+			}
+			json.NewEncoder(w).Encode(jobs)
 		})
 		r.Post("/documents", func(w http.ResponseWriter, req *http.Request) {
 			log.Println("DEBUG: Handler invoked")
@@ -84,7 +108,14 @@ func main() {
 				defer dst.Close()
 				io.Copy(dst, file)
 			}
-			err = queue.EnqueueDocProcess(queueClient, handler.Filename)
+			var jobID string
+			err = dbPool.QueryRow(req.Context(), "INSERT INTO analysis_jobs (type, status, started_at) VALUES ('Document Analysis', 'PROCESSING', NOW()) RETURNING id").Scan(&jobID)
+			if err != nil {
+				log.Printf("DB Error: %v", err)
+				http.Error(w, "DB Error", 500)
+				return
+			}
+			err = queue.EnqueueDocProcess(queueClient, handler.Filename, jobID)
 			if err != nil {
 				log.Printf("Queue error: %v", err)
 			}

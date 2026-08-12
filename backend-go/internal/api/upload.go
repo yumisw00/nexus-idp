@@ -56,7 +56,7 @@ func UploadHandler(db *pgxpool.Pool, qc *asynq.Client) http.HandlerFunc {
 			return
 		}
 
-		if err := queue.EnqueueDocProcess(qc, did); err != nil {
+		if err := queue.EnqueueDocProcess(qc, did, ""); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

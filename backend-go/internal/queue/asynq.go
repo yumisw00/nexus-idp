@@ -14,8 +14,14 @@ func NewClient() *asynq.Client {
 	}
 	return asynq.NewClient(asynq.RedisClientOpt{Addr: r})
 }
-func EnqueueDocProcess(c *asynq.Client, docID string) error {
-	p, err := json.Marshal(map[string]string{"doc_id": docID})
+
+type DocumentPayload struct {
+	DocID string `json:"doc_id"`
+	JobID string `json:"job_id"`
+}
+
+func EnqueueDocProcess(c *asynq.Client, docID, jobID string) error {
+	p, err := json.Marshal(DocumentPayload{DocID: docID, JobID: jobID})
 	if err != nil {
 		return err
 	}

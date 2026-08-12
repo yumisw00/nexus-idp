@@ -26,7 +26,7 @@ export const options = {
 		app: ({ head, body, assets, nonce, env }) => "<!doctype html>\n<html lang=\"en\">\n\n<head>\n    <meta charset=\"utf-8\" />\n    <link rel=\"icon\" href=\"" + assets + "/favicon.png\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />" + head + "\n</head>\n\n<body class=\"bg-slate-950 text-slate-100 selection:bg-blue-500/50\">\n    <div style=\"display: contents\">" + body + "</div>\n</body>\n\n</html>",
 		error
 	},
-	version_hash: "y6e9rl"
+	version_hash: "exceuz"
 };
 
 export async function get_hooks() {
