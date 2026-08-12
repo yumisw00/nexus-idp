@@ -7,7 +7,11 @@
 			const res = await fetch('/api/v1/jobs');
 			if (res.ok) {
 				const data = await res.json();
-				if (data && data.length > 0) activeJobs = data;
+				if (data && data.length > 0) {
+					activeJobs = data;
+				} else {
+					activeJobs = [{ id: 'API_WAIT', type: 'System', status: 'Standby', progress: 0 }];
+				}
 			}
 		} catch (err) {}
 	};
