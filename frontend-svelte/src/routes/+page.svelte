@@ -18,6 +18,8 @@
 		return () => clearInterval(interval);
 	});
 
+	const clearHistory = async () => { await fetch('/api/v1/jobs', { method: 'DELETE' }); fetchJobs(); };
+
 	const uploadFile = async (file) => {
 		if (!file) return;
 		isUploading = true;
@@ -80,7 +82,10 @@
 		
 		<div class="lg:col-span-2">
 			<div class="bg-slate-900/40 backdrop-blur-lg border border-white/10 shadow-xl rounded-2xl p-6 min-h-full">
-				<h3 class="text-lg font-semibold mb-6">Active Jobs</h3>
+				<div class="flex justify-between items-center mb-6">
+					<h3 class="text-lg font-semibold">Active Jobs</h3>
+					<button onclick={clearHistory} class="text-xs bg-red-500/10 text-red-400 border border-red-500/20 px-3 py-1.5 rounded-md hover:bg-red-500/20 transition-colors">Clear History</button>
+				</div>
 				<div class="space-y-4">
 					{#each activeJobs as job}
 						<div class="bg-slate-800/50 rounded-xl p-4 border border-white/5">

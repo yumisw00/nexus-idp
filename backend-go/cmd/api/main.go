@@ -89,6 +89,10 @@ func main() {
 			}
 			json.NewEncoder(w).Encode(jobs)
 		})
+		r.Delete("/jobs", func(w http.ResponseWriter, req *http.Request) {
+			_, _ = dbPool.Exec(req.Context(), "TRUNCATE analysis_jobs CASCADE")
+			w.WriteHeader(http.StatusOK)
+		})
 		r.Post("/documents", func(w http.ResponseWriter, req *http.Request) {
 			log.Println("DEBUG: Handler invoked")
 			if err := req.ParseMultipartForm(10 << 20); err != nil {
